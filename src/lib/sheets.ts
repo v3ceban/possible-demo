@@ -6,6 +6,7 @@ export type SessionData = {
   week: number;
   day: string;
   status: "P" | "A" | "L" | "C" | "R" | "";
+  isFireside?: boolean;
 };
 
 export type StudentData = {
@@ -32,6 +33,57 @@ const getSheets = () => {
   });
 };
 
+async function getFiresideData(name: string) {
+  try {
+    const sheets = getSheets();
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEETS_SHEET_ID,
+      range: "'Fireside Chats'!A:ZZ",
+    });
+
+    const rows = response.data.values;
+    if (!rows) return [];
+
+    const daysRow = rows[0]; // Row with Tuesday/Thursday
+    const weekInfoRow = rows[1]; // Row with W1,F1 etc
+    const studentRow = rows.find(
+      (row) => row[0]?.trim().toLowerCase() === name?.trim().toLowerCase(),
+    );
+
+    if (!studentRow || !daysRow || !weekInfoRow) return [];
+
+    const sessions = daysRow
+      .slice(6)
+      .map((day, index) => {
+        if (!day) return null; // Skip empty columns
+
+        const status = studentRow[index + 6];
+        if (!status || status === "") return null;
+
+        const weekInfo = weekInfoRow[index + 6]; // e.g., "W1, F1"
+        if (!weekInfo) return null;
+
+        const weekMatch = weekInfo.match(/W(\d+)/);
+        const week = weekMatch ? parseInt(weekMatch[1]) : 0;
+
+        return {
+          name: "Fireside Chat",
+          speaker: weekInfo,
+          week,
+          day,
+          status,
+          isFireside: true,
+        };
+      })
+      .filter(Boolean);
+
+    return sessions;
+  } catch (error) {
+    console.error("Error fetching fireside data:", error);
+    return [];
+  }
+}
+
 export async function getStudentData(
   email: string,
 ): Promise<StudentData | null> {
@@ -39,23 +91,20 @@ export async function getStudentData(
     const sheets = getSheets();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEETS_SHEET_ID,
-      range: "A:ZZ", // Adjust based on your sheet's range
+      range: "A:ZZ",
     });
 
     const rows = response.data.values;
     if (!rows) return null;
 
-    // Find student row
     const studentRow = rows.find((row) => row[1] === email);
     if (!studentRow) return null;
 
-    // Get week/day, session names, and speakers (rows 0, 1, and 2)
     const weekDays = rows[0].slice(11);
     const sessionNames = rows[1].slice(11);
     const speakers = rows[2].slice(11);
     let weekNumber = 0;
 
-    // Process session information
     const sessions = sessionNames.map((name, index) => {
       const weekDay = weekDays[index] || "";
       const weekMatch = weekDay.match(/Wk (\d+)/);
@@ -71,19 +120,50 @@ export async function getStudentData(
         speaker: speakers[index],
         week: weekNumber,
         day: day,
-        status: studentRow[index + 5] || "",
+        status: studentRow[index + 11] || "",
+        isFireside: false,
       };
     });
 
-    // Calculate statistics
+    const firesideData = await getFiresideData(studentRow[0]);
+
+    const allStatuses = [
+      ...studentRow.slice(11),
+      ...firesideData.map((session) => session!.status),
+    ];
+
     const stats = {
-      present: studentRow.filter((val) => val === "P").length,
-      reflection: studentRow.filter((val) => val === "R").length,
-      late: studentRow.filter((val) => val === "L").length,
-      conflict: studentRow.filter((val) => val === "C").length,
-      absent: studentRow.filter((val) => val === "A").length,
+      present: allStatuses.filter((val) => val === "P").length,
+      reflection: allStatuses.filter((val) => val === "R").length,
+      late: allStatuses.filter((val) => val === "L").length,
+      conflict: allStatuses.filter((val) => val === "C").length,
+      absent: allStatuses.filter((val) => val === "A").length,
       presentPercentage: parseFloat(studentRow[3]),
     };
+
+    const allSessions = [...sessions, ...firesideData].sort((a, b) => {
+      if (!a || !b) return 0;
+      if (a.week !== b.week) return a.week - b.week;
+
+      const getDayOrder = (day: string) => {
+        switch (day) {
+          case "Monday":
+            return 1;
+          case "Tuesday":
+            return 2;
+          case "Wednesday":
+            return 3;
+          case "Thursday":
+            return 4;
+          case "Friday":
+            return 5;
+          default:
+            return 0;
+        }
+      };
+
+      return getDayOrder(a.day) - getDayOrder(b.day);
+    });
 
     return {
       name: studentRow[0],
@@ -92,7 +172,7 @@ export async function getStudentData(
       attendance: parseFloat(studentRow[3]),
       totalEvents: parseInt(studentRow[4]),
       stats,
-      sessions,
+      sessions: allSessions as SessionData[],
     };
   } catch (error) {
     console.error("Error fetching student data:", error);
