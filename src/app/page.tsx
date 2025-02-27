@@ -17,6 +17,7 @@ import {
   XCircle,
   type LucideIcon,
 } from "lucide-react";
+import NoData from "@/components/no-data";
 
 async function getData() {
   const session = await auth();
@@ -34,19 +35,7 @@ export default async function Home() {
   const { session, data } = await getData();
 
   if (!data) {
-    return (
-      <main className="container py-4 mx-auto">
-        <h2 className="mb-4 text-2xl font-bold">No data available</h2>
-        {session ? (
-          <p>
-            Sorry, it was im<strong>POSSIBLE</strong> find your data. Please
-            contact David if you think this is a mistake.
-          </p>
-        ) : (
-          <p>Please sign in to view your attendance data.</p>
-        )}
-      </main>
-    );
+    return <NoData session={session} />;
   }
 
   type StatCard = {
@@ -60,9 +49,10 @@ export default async function Home() {
 
   const summaryCards: StatCard[] = [
     {
-      title: "Name",
+      title: "Student Name",
       value: data.name,
-      description: "Your registered name",
+      description:
+        "This is your name as per our records (let us know if it's wrong)",
     },
     {
       title: "Attendance Rate",
@@ -73,12 +63,12 @@ export default async function Home() {
           : data.attendance >= 50
             ? "text-orange-600"
             : "text-red-600",
-      description: "Your overall attendance rate up to current day",
+      description: "This is your overall attendance rate up to current day",
     },
     {
       title: "Total Events",
       value: data.totalEvents,
-      description: "Total number of sessions and fireside chats",
+      description: "This is the total number of sessions and fireside chats",
     },
   ];
 
@@ -126,47 +116,56 @@ export default async function Home() {
   ];
 
   const StatCardComponent = ({ card }: { card: StatCard }) => (
-    <Card className="rounded-sm transition-all hover:shadow-md">
+    <Card className="rounded-md border-0 shadow-md transition-all hover:shadow-lg">
       <CardHeader className="flex flex-row justify-between items-center pb-2 space-y-0">
         <CardTitle
-          className={`text-sm ${card.titleColor || "text-foreground"}`}
+          className={`text-sm font-semibold ${card.titleColor || "text-gray-800"}`}
         >
           {card.title}
         </CardTitle>
         {card.icon && (
-          <card.icon
-            className={`w-4 h-4 ${card.color || "text-muted-foreground"}`}
-          />
+          <card.icon className={`w-5 h-5 ${card.color || "text-blue-500"}`} />
         )}
       </CardHeader>
       <CardContent className="pb-2">
-        <div className={`text-2xl font-bold ${card.color || ""}`}>
+        <div className={`text-2xl font-bold ${card.color || "text-gray-800"}`}>
           {card.value}
         </div>
       </CardContent>
       <CardFooter>
-        <CardDescription>{card.description}</CardDescription>
+        <CardDescription className="text-gray-600">
+          {card.description}
+        </CardDescription>
       </CardFooter>
     </Card>
   );
 
   return (
-    <main className="container py-4 mx-auto">
-      <h1 className="mb-4 text-2xl font-bold">Student Dashboard</h1>
+    <main className="bg-gradient-to-br from-blue-50 to-teal-50 min-h-dvh">
+      <div className="container p-6 mx-auto">
+        <header className="mb-6 text-center">
+          <h1 className="mb-4 text-3xl font-bold text-blue-600">
+            Student Dashboard
+          </h1>
+          <p className="mb-8 text-gray-600">
+            View your engagement scores and session attendance
+          </p>
+        </header>
 
-      <section className="grid gap-4 mb-6 md:grid-cols-3">
-        {summaryCards.map((card, index) => (
-          <StatCardComponent key={index} card={card} />
-        ))}
-      </section>
+        <section className="grid gap-4 mb-8 md:grid-cols-3">
+          {summaryCards.map((card, index) => (
+            <StatCardComponent key={index} card={card} />
+          ))}
+        </section>
 
-      <section className="grid gap-4 mb-6 md:grid-cols-5">
-        {statsCards.map((card, index) => (
-          <StatCardComponent key={index} card={card} />
-        ))}
-      </section>
+        <section className="grid gap-4 mb-8 md:grid-cols-5">
+          {statsCards.map((card, index) => (
+            <StatCardComponent key={index} card={card} />
+          ))}
+        </section>
 
-      <SessionsAccordion sessions={data.sessions} />
+        <SessionsAccordion sessions={data.sessions} project={data.project} />
+      </div>
     </main>
   );
 }

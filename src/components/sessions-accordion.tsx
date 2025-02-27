@@ -1,4 +1,4 @@
-import { SessionData } from "@/lib/sheets";
+import { SessionData, Status } from "@/lib/sheets";
 import { groupSessionsByWeek } from "@/lib/utils";
 import {
   Accordion,
@@ -22,6 +22,9 @@ import { cn } from "@/lib/utils";
 
 interface SessionsAccordionProps {
   sessions: SessionData[];
+  project: {
+    status: Status;
+  };
 }
 
 interface SessionStatusProps {
@@ -71,7 +74,9 @@ function SessionStatus({ session, className }: SessionStatusProps) {
       {session.status === "A" && (
         <a
           className="flex gap-1 items-center ml-2 text-sm text-blue-500 hover:text-blue-700"
-          href="#"
+          target="_blank"
+          rel="noopener noreferrer"
+          href="https://www.notion.so/heypossible/Content-Library-17c20aa0025e81e5b3c8ee6ce25ce0ab"
         >
           <Video className="w-4 h-4" />
           <span className="underline">Watch recording</span>
@@ -81,7 +86,10 @@ function SessionStatus({ session, className }: SessionStatusProps) {
   );
 }
 
-export function SessionsAccordion({ sessions }: SessionsAccordionProps) {
+export function SessionsAccordion({
+  sessions,
+  project,
+}: SessionsAccordionProps) {
   const weeklyGroups = groupSessionsByWeek(sessions);
   const weeks = Object.keys(weeklyGroups).sort((a, b) => {
     const aNum = parseInt(a.split(" ")[1]);
@@ -90,9 +98,13 @@ export function SessionsAccordion({ sessions }: SessionsAccordionProps) {
   });
 
   return (
-    <Accordion defaultValue={[weeks[0]]} type="multiple" className="w-full">
+    <Accordion
+      defaultValue={[weeks[0]]}
+      type="multiple"
+      className="w-full divide-y divide-black/30"
+    >
       {weeks.map((week) => (
-        <AccordionItem key={week} value={week}>
+        <AccordionItem key={week} value={week} className="border-transparent">
           <AccordionTrigger className="hover:no-underline">
             <header className="flex gap-2 items-center">
               <ChevronRight className="w-4 h-4 transition-transform duration-200" />
@@ -103,10 +115,10 @@ export function SessionsAccordion({ sessions }: SessionsAccordionProps) {
             </header>
           </AccordionTrigger>
           <AccordionContent>
-            <main className="rounded-lg border">
+            <main className="overflow-hidden rounded-lg">
               {/* Desktop view */}
               <table className="hidden w-full md:table">
-                <thead className="bg-muted/50">
+                <thead className="text-white bg-teal-500">
                   <tr>
                     <th className="py-2 px-4 text-left">
                       <span className="flex gap-2 items-center">
@@ -129,7 +141,7 @@ export function SessionsAccordion({ sessions }: SessionsAccordionProps) {
                     <th className="py-2 px-4 text-left">Status</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="bg-white">
                   {Object.entries(
                     weeklyGroups[week].reduce(
                       (acc, session) => {
@@ -143,7 +155,7 @@ export function SessionsAccordion({ sessions }: SessionsAccordionProps) {
                       {} as Record<string, SessionData[]>,
                     ),
                   ).map(([day, daySessions]) => (
-                    <tr key={day} className="relative border-t">
+                    <tr key={day} className="relative border-t border-black/30">
                       <td className="py-2 px-4 align-top" rowSpan={1}>
                         {day}
                       </td>
@@ -153,7 +165,7 @@ export function SessionsAccordion({ sessions }: SessionsAccordionProps) {
                             <div
                               key={idx}
                               className={`flex items-center gap-2 ${
-                                idx > 0 ? "pt-2 border-t" : ""
+                                idx > 0 ? "pt-2 border-t border-black/30" : ""
                               }`}
                             >
                               {session.isFireside && (
@@ -172,7 +184,9 @@ export function SessionsAccordion({ sessions }: SessionsAccordionProps) {
                             <div
                               key={idx}
                               className={`${
-                                idx > 0 ? "pt-2 border-t min-h-4" : ""
+                                idx > 0
+                                  ? "pt-2 border-t border-black/30 min-h-4"
+                                  : ""
                               }`}
                             >
                               {session.speaker}
@@ -186,7 +200,9 @@ export function SessionsAccordion({ sessions }: SessionsAccordionProps) {
                             <SessionStatus
                               key={idx}
                               session={session}
-                              className={idx > 0 ? "pt-2 border-t" : ""}
+                              className={
+                                idx > 0 ? "pt-2 border-t border-black/30" : ""
+                              }
                             />
                           ))}
                         </div>
@@ -197,7 +213,7 @@ export function SessionsAccordion({ sessions }: SessionsAccordionProps) {
               </table>
 
               {/* Mobile view */}
-              <div className="divide-y md:hidden">
+              <div className="md:hidden">
                 {Object.entries(
                   weeklyGroups[week].reduce(
                     (acc, session) => {
@@ -221,7 +237,7 @@ export function SessionsAccordion({ sessions }: SessionsAccordionProps) {
                         <div
                           key={idx}
                           className={cn(
-                            "rounded-lg border p-3 space-y-2",
+                            "rounded-lg bg-white border p-3 space-y-2",
                             idx > 0 ? "mt-2" : "",
                           )}
                         >
@@ -254,6 +270,26 @@ export function SessionsAccordion({ sessions }: SessionsAccordionProps) {
           </AccordionContent>
         </AccordionItem>
       ))}
+      <AccordionItem value="Project" className="border-transparent">
+        <AccordionTrigger>
+          <header className="flex gap-2 items-center">
+            <ChevronRight className="w-4 h-4 transition-transform duration-200" />
+            <h3 className="font-semibold">Project</h3>
+          </header>
+        </AccordionTrigger>
+        <AccordionContent>
+          <main className="p-4 bg-white rounded-lg">
+            <div className="flex gap-2 items-center">
+              <Info className="w-4 h-4 text-muted-foreground" />
+              <span className="font-medium">
+                {["P", "A"].includes(project.status)
+                  ? "Completed"
+                  : "In progress"}
+              </span>
+            </div>
+          </main>
+        </AccordionContent>
+      </AccordionItem>
     </Accordion>
   );
 }

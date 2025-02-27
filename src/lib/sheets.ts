@@ -1,11 +1,13 @@
 import { google } from "googleapis";
 
+export type Status = "P" | "A" | "L" | "C" | "R" | "";
+
 export type SessionData = {
   name: string;
   speaker: string;
   week: number;
   day: string;
-  status: "P" | "A" | "L" | "C" | "R" | "";
+  status: Status;
   isFireside?: boolean;
 };
 
@@ -24,6 +26,9 @@ export type StudentData = {
     presentPercentage: number;
   };
   sessions: SessionData[];
+  project: {
+    status: Status;
+  };
 };
 
 const getSheets = () => {
@@ -81,6 +86,30 @@ async function getFiresideData(name: string) {
   } catch (error) {
     console.error("Error fetching fireside data:", error);
     return [];
+  }
+}
+
+async function getProjectData(name: string) {
+  try {
+    const sheets = getSheets();
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEETS_SHEET_ID,
+      range: "'Project'!A:ZZ",
+    });
+
+    const rows = response.data.values;
+    if (!rows) return { status: "" };
+
+    const studentRow = rows.find(
+      (row) => row[0]?.trim().toLowerCase() === name?.trim().toLowerCase(),
+    );
+
+    if (!studentRow) return { status: "" };
+
+    return { status: studentRow[2] || "" };
+  } catch (error) {
+    console.error("Error fetching project data:", error);
+    return { status: "" };
   }
 }
 
@@ -165,6 +194,8 @@ export async function getStudentData(
       return getDayOrder(a.day) - getDayOrder(b.day);
     });
 
+    const project = await getProjectData(studentRow[0]);
+
     return {
       name: studentRow[0],
       email: studentRow[1],
@@ -173,6 +204,7 @@ export async function getStudentData(
       totalEvents: parseInt(studentRow[4]),
       stats,
       sessions: allSessions as SessionData[],
+      project,
     };
   } catch (error) {
     console.error("Error fetching student data:", error);
