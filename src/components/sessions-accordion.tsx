@@ -16,6 +16,7 @@ import {
   Calendar,
   User2,
   Info,
+  Flame,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -171,7 +172,8 @@ export function SessionsAccordion({
                               }`}
                             >
                               {session.isFireside && (
-                                <span className="py-0.5 px-2 text-xs text-orange-700 bg-orange-100 rounded">
+                                <span className="flex items-center py-0.5 px-2 text-xs text-orange-700 bg-orange-100 rounded">
+                                  <Flame className="mr-0.5 w-[14px] h-[14px]" />
                                   Fireside
                                 </span>
                               )}
@@ -248,13 +250,11 @@ export function SessionsAccordion({
                             <div className="flex-1 space-y-1">
                               <div className="flex gap-2 items-center">
                                 {session.isFireside && (
-                                  <span className="py-0.5 px-2 text-xs text-orange-700 bg-orange-100 rounded">
-                                    Fireside
+                                  <span className="flex items-center py-0.5 px-2 text-xs text-orange-700 bg-orange-100 rounded">
+                                    <Flame className="mr-0.5 w-[14px] h-[14px]" />
+                                    {session.name}
                                   </span>
                                 )}
-                                <span className="font-medium">
-                                  {session.name}
-                                </span>
                               </div>
                               <div className="flex gap-2 items-center text-sm text-muted-foreground">
                                 <User2 className="w-3 h-3" />
