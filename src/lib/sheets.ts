@@ -1,6 +1,6 @@
 import { google } from "googleapis";
 
-export type Status = "P" | "A" | "L" | "C" | "R" | "";
+export type Status = "P" | "A" | "L" | "R" | "";
 
 export type SessionData = {
   name: string;
@@ -16,12 +16,10 @@ export type StudentData = {
   email: string;
   school: string;
   attendance: number;
-  totalEvents: number;
   stats: {
     present: number;
     reflection: number;
     late: number;
-    conflict: number;
     absent: number;
     presentPercentage: number;
   };
@@ -29,6 +27,7 @@ export type StudentData = {
   project: {
     status: Status;
   };
+  recordingUrl: string;
 };
 
 const getSheets = () => {
@@ -120,7 +119,7 @@ export async function getStudentData(
     const sheets = getSheets();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEETS_SHEET_ID,
-      range: "A:ZZ",
+      range: "'Events'!A:ZZ",
     });
 
     const rows = response.data.values;
@@ -129,9 +128,9 @@ export async function getStudentData(
     const studentRow = rows.find((row) => row[1] === email);
     if (!studentRow) return null;
 
-    const weekDays = rows[0].slice(11);
-    const sessionNames = rows[1].slice(11);
-    const speakers = rows[2].slice(11);
+    const weekDays = rows[0].slice(10);
+    const sessionNames = rows[1].slice(10);
+    const speakers = rows[2].slice(10);
     let weekNumber = 0;
 
     const sessions = sessionNames.map((name, index) => {
@@ -149,7 +148,7 @@ export async function getStudentData(
         speaker: speakers[index],
         week: weekNumber,
         day: day,
-        status: studentRow[index + 11] || "",
+        status: studentRow[index + 10] || "",
         isFireside: false,
       };
     });
@@ -157,7 +156,7 @@ export async function getStudentData(
     const firesideData = await getFiresideData(studentRow[0]);
 
     const allStatuses = [
-      ...studentRow.slice(11),
+      ...studentRow.slice(10),
       ...firesideData.map((session) => session!.status),
     ];
 
@@ -165,7 +164,6 @@ export async function getStudentData(
       present: allStatuses.filter((val) => val === "P").length,
       reflection: allStatuses.filter((val) => val === "R").length,
       late: allStatuses.filter((val) => val === "L").length,
-      conflict: allStatuses.filter((val) => val === "C").length,
       absent: allStatuses.filter((val) => val === "A").length,
       presentPercentage: parseFloat(studentRow[3]),
     };
@@ -201,10 +199,10 @@ export async function getStudentData(
       email: studentRow[1],
       school: studentRow[2],
       attendance: parseFloat(studentRow[3]),
-      totalEvents: parseInt(studentRow[4]),
       stats,
       sessions: allSessions as SessionData[],
       project,
+      recordingUrl: rows[2]?.[0] || "#",
     };
   } catch (error) {
     console.error("Error fetching student data:", error);

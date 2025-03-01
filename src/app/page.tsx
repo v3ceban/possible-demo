@@ -13,11 +13,11 @@ import {
   CheckCircle2,
   PenLine,
   Clock,
-  AlertCircle,
   XCircle,
   type LucideIcon,
 } from "lucide-react";
 import NoData from "@/components/no-data";
+import { JSX } from "react";
 
 async function getData() {
   const session = await auth();
@@ -28,34 +28,60 @@ async function getData() {
   if (!data) {
     return { session, data: null };
   }
-  return { session, data };
+
+  const recordingUrl = data.recordingUrl;
+  return { session, data, recordingUrl };
 }
 
+type StatCard = {
+  title: string;
+  value: string | number;
+  icon?: LucideIcon;
+  color?: string;
+  titleColor?: string;
+  description: string | JSX.Element;
+};
+
+const StatCardComponent = ({ card }: { card: StatCard }) => (
+  <Card className="rounded-md border-0 shadow-md transition-all hover:shadow-lg">
+    <CardHeader className="flex flex-row justify-between items-center pb-2 space-y-0">
+      <CardTitle
+        className={`text-sm font-semibold ${card.titleColor || "text-gray-800"}`}
+      >
+        {card.title}
+      </CardTitle>
+      {card.icon && (
+        <card.icon className={`w-5 h-5 ${card.color || "text-blue-500"}`} />
+      )}
+    </CardHeader>
+    <CardContent className="pb-2">
+      <div className={`text-2xl font-bold ${card.color || "text-gray-800"}`}>
+        {card.value}
+      </div>
+    </CardContent>
+    <CardFooter>
+      <CardDescription className="text-gray-600">
+        {card.description}
+      </CardDescription>
+    </CardFooter>
+  </Card>
+);
+
 export default async function Home() {
-  const { session, data } = await getData();
+  const { session, data, recordingUrl } = await getData();
 
   if (!data) {
     return <NoData session={session} />;
   }
 
-  type StatCard = {
-    title: string;
-    value: string | number;
-    icon?: LucideIcon;
-    color?: string;
-    titleColor?: string;
-    description: string;
-  };
-
   const summaryCards: StatCard[] = [
     {
       title: "Student Name",
       value: data.name,
-      description:
-        "This is your name as per our records (let us know if it's wrong)",
+      description: "Please let us know if your name needs to be updated",
     },
     {
-      title: "Attendance Rate",
+      title: "Engagement Rate",
       value: `${data.attendance}%`,
       color:
         data.attendance >= 70
@@ -63,12 +89,19 @@ export default async function Home() {
           : data.attendance >= 50
             ? "text-orange-600"
             : "text-red-600",
-      description: "This is your overall attendance rate up to current day",
-    },
-    {
-      title: "Total Events",
-      value: data.totalEvents,
-      description: "This is the total number of sessions and fireside chats",
+      description: (
+        <>
+          This is{" "}
+          <strong>
+            <em>your</em>
+          </strong>{" "}
+          overall{" "}
+          <strong>
+            <em>engagement</em>
+          </strong>{" "}
+          rate, updated every 24 hours
+        </>
+      ),
     },
   ];
 
@@ -98,14 +131,6 @@ export default async function Home() {
       description: "Sessions you attended late",
     },
     {
-      title: "Conflict",
-      value: data.stats.conflict,
-      icon: AlertCircle,
-      color: "text-orange-600",
-      titleColor: "text-orange-600",
-      description: "Sessions with schedule conflicts",
-    },
-    {
       title: "Absent",
       value: data.stats.absent,
       icon: XCircle,
@@ -114,31 +139,6 @@ export default async function Home() {
       description: "Sessions you missed",
     },
   ];
-
-  const StatCardComponent = ({ card }: { card: StatCard }) => (
-    <Card className="rounded-md border-0 shadow-md transition-all hover:shadow-lg">
-      <CardHeader className="flex flex-row justify-between items-center pb-2 space-y-0">
-        <CardTitle
-          className={`text-sm font-semibold ${card.titleColor || "text-gray-800"}`}
-        >
-          {card.title}
-        </CardTitle>
-        {card.icon && (
-          <card.icon className={`w-5 h-5 ${card.color || "text-blue-500"}`} />
-        )}
-      </CardHeader>
-      <CardContent className="pb-2">
-        <div className={`text-2xl font-bold ${card.color || "text-gray-800"}`}>
-          {card.value}
-        </div>
-      </CardContent>
-      <CardFooter>
-        <CardDescription className="text-gray-600">
-          {card.description}
-        </CardDescription>
-      </CardFooter>
-    </Card>
-  );
 
   return (
     <main className="bg-gradient-to-br from-blue-50 to-teal-50 min-h-dvh">
@@ -152,19 +152,23 @@ export default async function Home() {
           </p>
         </header>
 
-        <section className="grid gap-4 mb-8 md:grid-cols-3">
+        <section className="grid gap-4 mb-8 md:grid-cols-2">
           {summaryCards.map((card, index) => (
             <StatCardComponent key={index} card={card} />
           ))}
         </section>
 
-        <section className="grid gap-4 mb-8 md:grid-cols-5">
+        <section className="grid gap-4 mb-8 md:grid-cols-4">
           {statsCards.map((card, index) => (
             <StatCardComponent key={index} card={card} />
           ))}
         </section>
 
-        <SessionsAccordion sessions={data.sessions} project={data.project} />
+        <SessionsAccordion
+          sessions={data.sessions}
+          project={data.project}
+          recordingUrl={recordingUrl}
+        />
       </div>
     </main>
   );

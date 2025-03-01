@@ -11,7 +11,6 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  AlertCircle,
   PenLine,
   Video,
   Calendar,
@@ -20,19 +19,17 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface SessionsAccordionProps {
-  sessions: SessionData[];
-  project: {
-    status: Status;
-  };
-}
-
 interface SessionStatusProps {
   session: SessionData;
   className?: string;
+  recordingUrl?: string;
 }
 
-function SessionStatus({ session, className }: SessionStatusProps) {
+function SessionStatus({
+  session,
+  className,
+  recordingUrl,
+}: SessionStatusProps) {
   const getStatusIcon = () => {
     switch (session.status) {
       case "P":
@@ -41,8 +38,6 @@ function SessionStatus({ session, className }: SessionStatusProps) {
         return <XCircle className="w-4 h-4 text-red-600" />;
       case "L":
         return <Clock className="w-4 h-4 text-yellow-600" />;
-      case "C":
-        return <AlertCircle className="w-4 h-4 text-orange-600" />;
       case "R":
         return <PenLine className="w-4 h-4 text-blue-600" />;
     }
@@ -56,8 +51,6 @@ function SessionStatus({ session, className }: SessionStatusProps) {
         return "text-red-600";
       case "L":
         return "text-yellow-600";
-      case "C":
-        return "text-orange-600";
       case "R":
         return "text-blue-600";
     }
@@ -71,12 +64,12 @@ function SessionStatus({ session, className }: SessionStatusProps) {
           {session.status}
         </span>
       </span>
-      {session.status === "A" && (
+      {session.status === "A" && !session.isFireside && (
         <a
           className="flex gap-1 items-center ml-2 text-sm text-blue-500 hover:text-blue-700"
           target="_blank"
           rel="noopener noreferrer"
-          href="https://www.notion.so/heypossible/Content-Library-17c20aa0025e81e5b3c8ee6ce25ce0ab"
+          href={recordingUrl}
         >
           <Video className="w-4 h-4" />
           <span className="underline">Watch recording</span>
@@ -86,9 +79,18 @@ function SessionStatus({ session, className }: SessionStatusProps) {
   );
 }
 
+interface SessionsAccordionProps {
+  sessions: SessionData[];
+  project: {
+    status: Status;
+  };
+  recordingUrl: string;
+}
+
 export function SessionsAccordion({
   sessions,
   project,
+  recordingUrl,
 }: SessionsAccordionProps) {
   const weeklyGroups = groupSessionsByWeek(sessions);
   const weeks = Object.keys(weeklyGroups).sort((a, b) => {
@@ -203,6 +205,7 @@ export function SessionsAccordion({
                               className={
                                 idx > 0 ? "pt-2 border-t border-black/30" : ""
                               }
+                              recordingUrl={recordingUrl}
                             />
                           ))}
                         </div>
