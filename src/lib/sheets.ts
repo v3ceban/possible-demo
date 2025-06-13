@@ -125,7 +125,7 @@ export async function getStudentData(
     const rows = response.data.values;
     if (!rows) return null;
 
-    const studentRow = rows.find((row) => row[1] === email);
+    const studentRow = rows.find((row) => row[1]?.trim().toLowerCase() === email?.trim().toLowerCase());
     if (!studentRow) return null;
 
     const weekDays = rows[0].slice(10);
